@@ -9,6 +9,7 @@ import rospy
 import copy
 import moveit_commander
 import argparse
+import numpy as np
 
 from geometry_msgs.msg import Pose
 
@@ -20,6 +21,9 @@ class INSTest:
 		self.robot = moveit_commander.RobotCommander()
 		group_name = "xarm6"
 		self.group = moveit_commander.MoveGroupCommander(group_name)
+
+		self.group.set_end_effector_link("link_obsidian")
+		self.group.set_pose_reference_frame("link_base")
 
 		# We can get the name of the reference frame for this robot:
 		planning_frame = self.group.get_planning_frame()
@@ -41,29 +45,61 @@ class INSTest:
 		arg_parse = argparse.ArgumentParser(description="Args for robot movement plans")
 		arg_parse.add_argument("-n", "--number_of_iters", type=int, required=True, help="Number of plan iterations")
 		arg_parse.add_argument("-s", "--sleep", type=float,  default=1.0)
-		arg_parse.add_argument("-m", "--mode", default="x", help="Translation mode. <x> or <y>")
+		arg_parse.add_argument("-m", "--mode", default="x", help="Translation mode. <x> or <xy>")
 		arg_parse.add_argument("-r", "--rotation_test", default=False, type=bool)
 		return arg_parse.parse_args()
 
 	def generate_plan(self):
 		waypoints = []
-		scale = 0.35  # Meters
+		xy_motion = 0.35  # Meters
+		x_linear_motion = 0.4
+		y_linear_motion = 0.4
+		z_linear_motion = 0.4
+		z_rot_motion = 0.2
 		wpose = self.init_pose
 
 		if self.args.mode == "x":
-			wpose.position.x += scale
+			wpose.position.x += x_linear_motion
 			waypoints.append(copy.deepcopy(wpose))
-			wpose.position.x -= scale
+			wpose.position.x -= x_linear_motion
 			waypoints.append(copy.deepcopy(wpose))
 
 		if self.args.mode == "y":
-			wpose.position.x += scale
+			wpose.position.y += y_linear_motion
 			waypoints.append(copy.deepcopy(wpose))
-			wpose.position.y -= scale
+			wpose.position.y -= y_linear_motion
 			waypoints.append(copy.deepcopy(wpose))
-			wpose.position.y += scale
+
+		if self.args.mode == "z":
+			wpose.position.z += z_linear_motion
 			waypoints.append(copy.deepcopy(wpose))
-			wpose.position.x -= scale
+			wpose.position.z -= z_linear_motion
+			waypoints.append(copy.deepcopy(wpose))
+
+		if self.args.mode == "z_rot":
+			wpose.orientation.x = 0.0
+			wpose.orientation.y = -0.717
+			wpose.orientation.z = 0.0
+			wpose.orientation.w = -0.717
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.position.x += z_rot_motion
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.position.x -= z_rot_motion
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.orientation.x = 0.0
+			wpose.orientation.y = 0.0
+			wpose.orientation.z = 0.0
+			wpose.orientation.w = 1.0
+			waypoints.append(copy.deepcopy(wpose))
+
+		if self.args.mode == "xy":
+			wpose.position.x += xy_motion
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.position.y -= xy_motion
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.position.y += xy_motion
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.position.x -= xy_motion
 			waypoints.append(copy.deepcopy(wpose))
 
 #		IGNORE Z TRANSLATION FOR NOW
@@ -82,13 +118,17 @@ class INSTest:
 		p = self.generate_plan()
 		self.group.execute(p, wait=True)
 
+	def deg_to_rad(self, deg):
+		rad = deg * np.pi/180.0
+		return rad
+
 	def go_home(self):
 		joint_goal = self.group.get_current_joint_values()
 		joint_goal[0] = 0
-		joint_goal[1] = 0
-		joint_goal[2] = 0
+		joint_goal[1] = self.deg_to_rad(2.0)
+		joint_goal[2] = self.deg_to_rad(-4.0)
 		joint_goal[3] = 0
-		joint_goal[4] = 0
+		joint_goal[4] = self.deg_to_rad(2.0)
 		joint_goal[5] = 0
 		self.group.go(joint_goal, wait=True)
 		self.group.stop()
@@ -99,7 +139,7 @@ class INSTest:
 		p.orientation.y = 0.5 		
 		p.orientation.z = 0.0
 		p.orientation.w = 0.0
-		p.position.x = self.init_pose.position.x
+		p.position.x = self.init_pose.position.x + 0.05 # Offset to avoid collision
 		p.position.y = self.init_pose.position.y
 		p.position.z = self.init_pose.position.z
 
