@@ -55,7 +55,7 @@ class INSTest:
 		x_linear_motion = 0.4
 		y_linear_motion = 0.4
 		z_linear_motion = 0.4
-		z_rot_motion = 0.2
+		rot_motion = 0.2
 		wpose = self.init_pose
 
 		if self.args.mode == "x":
@@ -76,15 +76,31 @@ class INSTest:
 			wpose.position.z -= z_linear_motion
 			waypoints.append(copy.deepcopy(wpose))
 
-		if self.args.mode == "z_rot":
+		if self.args.mode == "y_rot":
 			wpose.orientation.x = 0.0
 			wpose.orientation.y = -0.717
 			wpose.orientation.z = 0.0
 			wpose.orientation.w = -0.717
 			waypoints.append(copy.deepcopy(wpose))
-			wpose.position.x += z_rot_motion
+			wpose.position.x += rot_motion
 			waypoints.append(copy.deepcopy(wpose))
-			wpose.position.x -= z_rot_motion
+			wpose.position.x -= rot_motion
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.orientation.x = 0.0
+			wpose.orientation.y = 0.0
+			wpose.orientation.z = 0.0
+			wpose.orientation.w = 1.0
+			waypoints.append(copy.deepcopy(wpose))
+
+		if self.args.mode == "x_rot":
+			wpose.orientation.x = 0.717
+			wpose.orientation.y = 0.0
+			wpose.orientation.z = 0.0
+			wpose.orientation.w = 0.717
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.position.y += rot_motion
+			waypoints.append(copy.deepcopy(wpose))
+			wpose.position.y -= rot_motion
 			waypoints.append(copy.deepcopy(wpose))
 			wpose.orientation.x = 0.0
 			wpose.orientation.y = 0.0
