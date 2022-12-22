@@ -46,7 +46,6 @@ class INSTest:
 		arg_parse.add_argument("-n", "--number_of_iters", type=int, required=True, help="Number of plan iterations")
 		arg_parse.add_argument("-s", "--sleep", type=float,  default=1.0)
 		arg_parse.add_argument("-m", "--mode", default="x", help="Translation mode. <x> or <xy>")
-		arg_parse.add_argument("-r", "--rotation_test", default=False, type=bool)
 		return arg_parse.parse_args()
 
 	def generate_plan(self):
@@ -118,11 +117,6 @@ class INSTest:
 			wpose.position.x -= xy_motion
 			waypoints.append(copy.deepcopy(wpose))
 
-#		IGNORE Z TRANSLATION FOR NOW
-#		wpose.position.z += scale
-#		waypoints.append(copy.deepcopy(wpose))
-#		wpose.position.z -= scale
-#		waypoints.append(copy.deepcopy(wpose))
 
 		(plan, fraction) = self.group.compute_cartesian_path(
 										   waypoints,   # waypoints to follow
@@ -149,25 +143,8 @@ class INSTest:
 		self.group.go(joint_goal, wait=True)
 		self.group.stop()
 
-	def go_to_start_pose(self):
-		p = Pose()
-		p.orientation.x = 0.8660254
-		p.orientation.y = 0.5 		
-		p.orientation.z = 0.0
-		p.orientation.w = 0.0
-		p.position.x = self.init_pose.position.x + 0.05 # Offset to avoid collision
-		p.position.y = self.init_pose.position.y
-		p.position.z = self.init_pose.position.z
-
-		self.group.set_pose_target(p)
-		self.group.go(wait=True)
-		self.init_pose = self.group.get_current_pose().pose
-
 def main():
 	ins = INSTest()
-
-	if ins.args.rotation_test:
-		ins.go_to_start_pose()
 
 	for i in range(ins.args.number_of_iters):
 		ins.run_plan()
